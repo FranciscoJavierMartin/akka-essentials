@@ -1,4 +1,4 @@
 # Akka course
 
 ## Some basics
-``` myActor ! "Message" ``` means "Message" is sended to myActor
+``` myActor ! "Message" ``` means "Message" is sent to myActor
