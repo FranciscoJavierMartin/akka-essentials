@@ -3,7 +3,7 @@
 ## Actor basics
 
 Every Actor type derives from
-~~~
+~~~scala
 trait Actor {
     def receive: Receive
 }
@@ -25,7 +25,7 @@ The ```receive``` method is the message handler and it is invoked when the actor
 - Reply using sender: ```sender() ! "Hello"```
 
 ## Changing actor behavior
-~~~
+~~~scala
 context.become(anotherHandler, true)
 ~~~
 *anotherHandler* is a function that returns a Receive.
@@ -33,7 +33,7 @@ context.become(anotherHandler, true)
 If you pass *true* to the second parameter, then replace the current handler (this is the default behavior) else if you pass false, then stack the new handler on top.
 
 ##### Reverting to the previous behavior
-~~~
+~~~scala
 context.unbecome()
 ~~~
 Pops the current behavior off the stack
@@ -44,7 +44,7 @@ Pops the current behavior off the stack
 
 ## Child actors
 Actors can create other actors
-~~~
+~~~scala
 context.actorOf(Props[MyActor], "child")
 ~~~
 
@@ -59,7 +59,7 @@ context.actorOf(Props[MyActor], "child")
 ~~~
 
 ##### Actor selections
-~~~
+~~~scala
 system.actorSelection("/user/parent/child")
 ~~~
 works with *context* as well
@@ -67,7 +67,7 @@ works with *context* as well
 ## Testing actors
 ### Test suite definition
 - recommended: use a companion as well
-~~~
+~~~scala
 class MySuperSpec extends TestKit(ActorSystem("MySpec"))
     with ImplicitSender
     with WordSpecLike
@@ -75,7 +75,7 @@ class MySuperSpec extends TestKit(ActorSystem("MySpec"))
 ~~~
 
 ### Test structure
-~~~
+~~~scala
 "The thing being tested" should {
     "do this" in {
         // testing scenario
@@ -87,7 +87,7 @@ class MySuperSpec extends TestKit(ActorSystem("MySpec"))
 ~~~
 
 ### Message scenario
-~~~
+~~~scala
 val message = expectMsg("Hello")
 
 expectNoMsg(1 second)
@@ -102,7 +102,7 @@ val message = receiven(2)
 ~~~
 Has a default timeout fo 3 seconds (is configurable)
 
-~~~
+~~~scala
 expectMsgPF(){
     case "hello" =>
 }
@@ -111,12 +111,12 @@ We only care that the PF is defined
 
 ### TestProbes
 TestProbes are useful for interactions with multiple actors
-~~~
+~~~scala
 val probe = TestProbe("TestPRobeName")
 ~~~
 
 Can send messages or reply
-~~~
+~~~scala
 probe.send(actorUnderTest, "a message")
 probe.reply("a message")
 ~~~
@@ -124,14 +124,14 @@ Reply to the last sender
 
 ### Timed assertions
 Put a time cap on the assertions
-~~~
+~~~scala
 within(500.milles, 1 second) {
     // everything in here must pass
 }
 ~~~
 
 Receive and process messages during a time window
-~~~
+~~~scala
 val results = receiveWhile[Int](max = 2 seconds, idle = Duration.Zero, messages = 10){
     case WorkResult(...) => // some value
 }
@@ -142,7 +142,7 @@ then do assertions based on the results
 
 ### Intercepting loggins
 Use EventFilters to intercept logs
-~~~
+~~~scala
 EventFilter.info("my log message", occurrences = 1) intercept {
     // your test here
 }
@@ -150,7 +150,7 @@ EventFilter.info("my log message", occurrences = 1) intercept {
 works for all log levels: debug, info, warning, error
 
 ##### Intercept exceptions
-~~~
+~~~scala
 EventFilter[RunTimeException](occurrences = 1) intercept {
     // your test here
 }
@@ -164,7 +164,7 @@ Good for integration tests where:
 Synchronous tests: all messages are handled in the calling thread
 
 ##### Option 1: TestActorRef
-~~~
+~~~scala
 val syncActor = TestActorRef[MyActor](Props[MyActor])
 assert(syncActor.underlyingActor.member == 1)
 syncActor.receive(Tick)
@@ -172,7 +172,7 @@ syncActor.receive(Tick)
 needs an implicit ActorSystem
 
 ##### Option 2: CallingThreadDispatcher
-~~~
+~~~scala
 val syncActor = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.Id))
 ~~~
 
@@ -180,26 +180,26 @@ val syncActor = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispat
 ### Stopping Actors
 ##### Using *context.stop*
 
-~~~
+~~~scala
 context.stop(child)
 ~~~
 asynchronous - actor may continue to receive messages until actually stopped
-~~~
+~~~scala
 context.stop(self)
 ~~~
 will recursively stop children (asynchronously)
 
 ##### Using special messages
-~~~
+~~~scala
 actor ! PoisonPill
 ~~~
-~~~
+~~~scala
 actor ! Kill
 ~~~
 makes the actor throw ans ActorKilledException
 
 ##### Death watch
-~~~
+~~~scala
 context.watch(actor)
 ~~~
 - I will receive a Terminated message when this actor dies.
@@ -209,7 +209,7 @@ context.watch(actor)
 ### Supervision
 Parents decide on their children's failure with a supervision strategy
 
-~~~
+~~~scala
 override val supervisorStrategy(maxNrOfRetries = 10, maxNrOfRetries = 1 minute) {
     case e: IllegalArgumentException => Restart
     // other cases here
@@ -226,7 +226,7 @@ Pain: the repeated restarts of actors
 - restarting immediately might be useless
 - everyone attempting at the same time can kill resources again
 
-~~~
+~~~scala
 BackoffSupervisor.props(
     Backoff.onFailure( // controls when backoff kicks in
         Props[MyActor],
@@ -241,14 +241,14 @@ BackoffSupervisor.props(
 ### Schedulers and timers
 
 - Schedule and action at a defined point in the future
-~~~
+~~~scala
 val schedule = system.scheduler.scheduleOnce(1 second){
     // Your code
 }
 ~~~
 
 - Repeated action
-~~~
+~~~scala
 val schedule = system.scheduler.schedule(1 second, 2 seconds) {
     // your code
 }
@@ -256,13 +256,13 @@ val schedule = system.scheduler.schedule(1 second, 2 seconds) {
 1 second means the initial delay and 2 seconds represent the interval duration. To cancel the interval, use ```schedule.cancel()```
 
 - Timers: schedule messages to self, from within
-~~~
+~~~scala
 timers.startSingleTimer(MyTimerKey, MyMessage, 2 seconds)
 ~~~
-~~~
+~~~scala
 timers.startPeriodicTimer(MyTimerKey, MyMessage, 2 seconds)
 ~~~
-~~~
+~~~scala
 timers.cancel(MyTimerKey)
 ~~~
 
@@ -272,18 +272,18 @@ Goal: spread/delegate messages in between N identical actors
 - Router method #1: manual - ignored
 
 - Router method #2: pool routers
-~~~
+~~~scala
 val router = system.actorOf(RoundRobinPool(5).props(Props[MyActor]),"myRouter")
 ~~~
-~~~
+~~~scala
 val router = system.actorOf(FromConfig.props(Props[MyActor]), "myPoolRouter")
 ~~~
 
 - Router method #3: group routers
-~~~
+~~~scala
 val router = system.actorOf(RoundRobinGroup(paths), "myRouter")
 ~~~
-~~~
+~~~scala
 val router = system.actorOf(FromConfig.props(Props[MyActor]), "myGroupRouter")
 ~~~
 Special messages: Broadcast, PoisonPill, Kill, AddRoute & co
@@ -292,15 +292,15 @@ Special messages: Broadcast, PoisonPill, Kill, AddRoute & co
 ### Stash
 Put messages aside for later
 - mix-in the Stash trait
-~~~
+~~~scala
 extends Actor ... with Stash
 ~~~
 - stash the message away
-~~~
+~~~scala
 stash()
 ~~~
 - empty the stash
-~~~
+~~~scala
 unstashAll()
 ~~~
 
